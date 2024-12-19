@@ -33,6 +33,7 @@ public class SecurityConfiguration {
                                         "/swagger-ui/**",   // Swagger UI resources
                                         "/swagger-ui.html"  // Swagger UI HTML page
                                 ).permitAll()          // Allow access to Swagger without authentication
+                                .requestMatchers("/actuator/**").permitAll()
                                 .requestMatchers("/").hasAnyAuthority("ROLE_ADMIN", "ROLE_CLIENT")
                                 .requestMatchers("/roles/**").hasAnyAuthority( "ROLE_ADMIN")
                                 .requestMatchers("/api/v1/auth/**").permitAll()

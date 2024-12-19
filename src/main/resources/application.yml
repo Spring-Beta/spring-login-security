@@ -1,34 +1,74 @@
 spring:
   application:
-    name: spring-login-security
+    name: spring-login-security # Name of the application
 
   cache:
-    type: redis
+    type: redis # Specifies Redis as the cache type
     redis:
-      host: localhost
-      port: 6379
-      time-to-live: 60000
+      host: localhost # Redis server host
+      port: 6379      # Redis server port
+      time-to-live: 60000 # Cache expiration time in milliseconds (60 seconds)
 
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/login_sec
-    username: postgres
-    password: admin
+    driver-class-name: org.postgresql.Driver # PostgreSQL JDBC driver class
+    url: jdbc:postgresql://localhost:5432/login_sec # Database connection URL
+    username: postgres # Database username
+    password: admin    # Database password
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create-drop # Automatically drop and recreate the database schema on startup
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect # Hibernate dialect for PostgreSQL
+    show-sql: true # Enable SQL statement logging
 
 token:
   signing:
-    key: 413F4428472B4B6250655368566D5970337336763979244226452948404D6351
+    key: 413F4428472B4B6250655368566D5970337336763979244226452948404D6351 # Secret key for signing tokens
 
-resilience4j.circuitbreaker.instances.loginCircuitBreaker:
-  registerHealthIndicator: true
-  failureRateThreshold: 50
-  waitDurationInOpenState: 10s
-  slidingWindowSize: 5
+management:
+  health:
+    circuitbreakers:
+      enabled: true # Enable health indicators for circuit breakers
+  endpoints:
+    web:
+      exposure:
+        include: "*" # Expose all Actuator endpoints
+  endpoint:
+    health:
+      show-details: always # Always show detailed health information
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      loginCircuitBreaker: # Circuit breaker configuration for "loginCircuitBreaker" instance
+        registerHealthIndicator: true # Enable health indicator for the circuit breaker
+        eventConsumerBufferSize: 10 # Buffer size for event consumers
+        slidingWindowType: COUNT_BASED # Use a fixed count-based sliding window
+        slidingWindowSize: 3 # Number of calls in the sliding window
+        failureRateThreshold: 50 # Failure rate threshold to open the circuit (in %)
+        waitDurationInOpenState: 100s # Wait duration before transitioning to half-open state
+        permittedNumberOfCallsInHalfOpenState: 2 # Number of allowed calls in half-open state
+        automaticTransitionFromOpenToHalfOpenEnabled: true # Enable automatic transition to half-open
+
+  timelimiter:
+    instances:
+      loginCircuitBreaker: # Time limiter configuration for "loginCircuitBreaker" instance
+        timeout-duration: 3s # Maximum duration before timing out
+
+  retry:
+    instances:
+      loginCircuitBreaker: # Retry configuration for "loginCircuitBreaker" instance
+        max-attempts: 3 # Maximum number of retry attempts
+        wait-duration: 5s # Duration to wait between retries
+
+logging:
+  level:
+    io:
+      github:
+        resilience4j:
+          circuitbreaker: DEBUG # Enable DEBUG logging for Resilience4j circuit breakers
+    com:
+      example:
+        springloginsecurity: DEBUG # Enable DEBUG logging for application package
